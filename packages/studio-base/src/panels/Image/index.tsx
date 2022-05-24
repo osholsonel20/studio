@@ -11,9 +11,8 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
-import { Theme } from "@mui/material";
-import { makeStyles } from "@mui/styles";
-import cx from "classnames";
+import DownloadIcon from "@mui/icons-material/Download";
+import { Typography, styled as muiStyled } from "@mui/material";
 import produce from "immer";
 import { difference, set, union } from "lodash";
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
@@ -23,6 +22,7 @@ import { useMessagePipeline } from "@foxglove/studio-base/components/MessagePipe
 import Panel from "@foxglove/studio-base/components/Panel";
 import { usePanelContext } from "@foxglove/studio-base/components/PanelContext";
 import PanelToolbar from "@foxglove/studio-base/components/PanelToolbar";
+import ToolbarIconButton from "@foxglove/studio-base/components/PanelToolbar/ToolbarIconButton";
 import { SettingsTreeAction } from "@foxglove/studio-base/components/SettingsTreeEditor/types";
 import Stack from "@foxglove/studio-base/components/Stack";
 import { usePanelSettingsTreeUpdate } from "@foxglove/studio-base/providers/PanelSettingsEditorContextProvider";
@@ -30,9 +30,10 @@ import inScreenshotTests from "@foxglove/studio-base/stories/inScreenshotTests";
 import { CameraInfo } from "@foxglove/studio-base/types/Messages";
 import { mightActuallyBePartial } from "@foxglove/studio-base/util/mightActuallyBePartial";
 import { getTopicsByTopicName } from "@foxglove/studio-base/util/selectors";
+import { fonts } from "@foxglove/studio-base/util/sharedStyleConstants";
 import { formatTimeRaw } from "@foxglove/studio-base/util/time";
 
-import { ImageCanvas, ImageEmptyState, Toolbar, TopicDropdown, TopicTimestamp } from "./components";
+import { ImageCanvas, ImageEmptyState, Toolbar, TopicDropdown } from "./components";
 import { useCameraInfo, ANNOTATION_DATATYPES, useImagePanelMessages } from "./hooks";
 import helpContent from "./index.help.md";
 import { NORMALIZABLE_IMAGE_DATATYPES } from "./lib/normalizeMessage";
@@ -45,76 +46,28 @@ type Props = {
   saveConfig: SaveImagePanelConfig;
 };
 
-const useStyles = makeStyles((theme: Theme) => ({
-  controls: {
-    display: "flex",
-    flexWrap: "wrap",
-    flex: "1 1 auto",
-    alignItems: "center",
-    overflow: "hidden",
-    gap: theme.spacing(0.5),
-  },
-  bottomBar: {
-    transition: "opacity 0.1s ease-in-out",
-    display: "flex",
-    flex: "0 0 auto",
-    flexDirection: "row",
-    backgroundColor: "transparent",
-    textAlign: "right",
-    position: "absolute",
-    right: 4,
-    paddingRight: 5,
-    bottom: 8,
-    zIndex: 100,
-    opacity: "0",
+const BottomBar = muiStyled("div", {
+  shouldForwardProp: (prop) => prop !== "screenshotTest",
+})<{ screenshotTest: boolean }>(({ screenshotTest, theme }) => ({
+  display: "flex",
+  textAlign: "right",
+  position: "absolute",
+  margin: theme.spacing(0.5, 1),
+  right: 0,
+  bottom: 0,
+  zIndex: theme.zIndex.tooltip,
+  transition: "opacity 0.1s ease-in-out",
+  opacity: 0,
 
-    "&.inScreenshotTests": {
-      opacity: 1,
-    },
-    ".mosaic-window:hover &": {
-      opacity: "1",
-    },
+  ".mosaic-window:hover &": {
+    opacity: "1",
   },
-  dropdown: {
-    padding: "4px 8px !important",
-  },
-  dropdownTitle: {
-    overflow: "hidden",
-    whiteSpace: "nowrap",
-    textOverflow: "ellipsis",
-    flexShrink: 1,
-    display: "flex",
-    alignItems: "center",
-  },
-  dropdownItem: {
-    position: "relative",
-  },
-  toggleButton: {
-    display: "flex",
-    alignItems: "center",
-  },
-  emptyStateContainer: {
-    width: "100%",
-    height: "100%",
-    position: "absolute",
-  },
+  ...(screenshotTest && {
+    opacity: 1,
+  }),
 }));
 
-const BottomBar = ({ children }: { children?: React.ReactNode }) => {
-  const classes = useStyles();
-  return (
-    <div
-      className={cx(classes.bottomBar, {
-        inScreenshotTests: inScreenshotTests(),
-      })}
-    >
-      {children}
-    </div>
-  );
-};
-
 function ImageView(props: Props) {
-  const classes = useStyles();
   const { config, saveConfig } = props;
   const { cameraTopic, enabledMarkerTopics, transformMarkers } = config;
   const { topics } = useDataSourceInfo();
@@ -250,17 +203,6 @@ function ImageView(props: Props) {
     };
   }, [annotations, cameraInfo, transformMarkers]);
 
-  const renderBottomBar = () => {
-    const topicTimestamp = (
-      <TopicTimestamp
-        style={{ padding: "8px 8px 0px 0px" }}
-        text={image ? formatTimeRaw(image.stamp) : ""}
-      />
-    );
-
-    return <BottomBar>{topicTimestamp}</BottomBar>;
-  };
-
   const imageTopicDropdown = useMemo(() => {
     const items = allImageTopics.map((topic) => {
       return {
@@ -285,12 +227,36 @@ function ImageView(props: Props) {
     return <TopicDropdown multiple={false} title={title} items={items} onChange={onChange} />;
   }, [cameraTopic, allImageTopics, onChangeCameraTopic]);
 
-  const showEmptyState = !image;
-
   return (
     <Stack flex="auto" overflow="hidden" position="relative">
-      <PanelToolbar helpContent={helpContent}>
-        <div className={classes.controls}>{imageTopicDropdown}</div>
+      <PanelToolbar
+        helpContent={helpContent}
+        additionalIcons={
+          image && (
+            <ToolbarIconButton
+              title="Dowload image"
+              onClick={() =>
+                console.log(
+                  // TODO
+                  "make downloading things work",
+                )
+              }
+            >
+              <DownloadIcon fontSize="small" />
+            </ToolbarIconButton>
+          )
+        }
+      >
+        <Stack
+          direction="row"
+          flexWrap="wrap"
+          flex="auto"
+          alignItems="center"
+          overflow="hidden"
+          gap={0.5}
+        >
+          {imageTopicDropdown}
+        </Stack>
       </PanelToolbar>
       <Stack fullWidth fullHeight>
         {/* Always render the ImageCanvas because it's expensive to unmount and start up. */}
@@ -306,16 +272,20 @@ function ImageView(props: Props) {
           />
         )}
         {/* If rendered, EmptyState will hide the always-present ImageCanvas */}
-        {showEmptyState && (
-          <div className={classes.emptyStateContainer}>
-            <ImageEmptyState
-              cameraTopic={cameraTopic}
-              markerTopics={enabledMarkerTopics}
-              shouldSynchronize={shouldSynchronize}
-            />
-          </div>
+        {!image && (
+          <ImageEmptyState
+            cameraTopic={cameraTopic}
+            markerTopics={enabledMarkerTopics}
+            shouldSynchronize={shouldSynchronize}
+          />
         )}
-        {!showEmptyState && renderBottomBar()}
+        {image && (
+          <BottomBar screenshotTest={inScreenshotTests()}>
+            <Typography variant="caption" fontFamily={fonts.MONOSPACE}>
+              {formatTimeRaw(image.stamp)}
+            </Typography>
+          </BottomBar>
+        )}
       </Stack>
       <Toolbar pixelData={activePixelData} />
     </Stack>
