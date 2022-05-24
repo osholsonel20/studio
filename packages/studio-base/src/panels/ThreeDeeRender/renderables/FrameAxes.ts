@@ -8,6 +8,7 @@ import { LineGeometry } from "three/examples/jsm/lines/LineGeometry";
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial";
 
 import Logger from "@foxglove/log";
+import { SettingsTreeFields } from "@foxglove/studio-base/components/SettingsTreeEditor/types";
 
 import { MaterialCache, StandardColor } from "../MaterialCache";
 import { Renderer } from "../Renderer";
@@ -16,6 +17,7 @@ import { Pose, rosTimeToNanoSec, TF } from "../ros";
 import { LayerSettingsTransform, LayerType } from "../settings";
 import { Transform } from "../transforms/Transform";
 import { makePose } from "../transforms/geometry";
+import { Duration } from "../transforms/time";
 import { updatePose } from "../updatePose";
 import { linePickingMaterial, releaseLinePickingMaterial } from "./markers/materials";
 import { missingTransformMessage, MISSING_TRANSFORM } from "./transforms";
@@ -40,9 +42,16 @@ const DEFAULT_SETTINGS: LayerSettingsTransform = {
   visible: true,
 };
 
+const INFINITE_DURATION: Duration = 4_294_967_295n * BigInt(1e9);
+
 const tempMat4 = new THREE.Matrix4();
 const tempVec = new THREE.Vector3();
 const tempVecB = new THREE.Vector3();
+
+const tempLower: [Duration, Transform] = [0n, Transform.Identity()];
+const tempUpper: [Duration, Transform] = [0n, Transform.Identity()];
+const tempQuaternion = new THREE.Quaternion();
+const tempEuler = new THREE.Euler();
 
 type FrameAxisRenderable = THREE.Object3D & {
   userData: {
@@ -77,9 +86,68 @@ export class FrameAxes extends THREE.Object3D {
 
     this.linePickingMaterial = linePickingMaterial(PICKING_LINE_SIZE, this.renderer.materialCache);
 
-    renderer.setSettingsNodeProvider(LayerType.Transform, (_topicConfig) => {
-      // const cur = topicConfig as Partial<LayerSettingsTransform>;
-      return {};
+    renderer.setSettingsNodeProvider(LayerType.Transform, (_tfConfig, { name: frameId }) => {
+      // const cur = tfConfig as Partial<LayerSettingsTransform>;
+      let ageValue: string | undefined;
+      let xyzValue: THREE.Vector3Tuple | undefined;
+      let rpyValue: THREE.Vector3Tuple | undefined;
+      const currentTime = this.renderer.currentTime;
+      const frame = this.renderer.transformTree.frame(frameId);
+      const parentFrameId = frame?.parent()?.id;
+
+      if (parentFrameId == undefined) {
+        return {
+          fields: {
+            parent: { label: "Parent", input: "string", value: "<root>" },
+          },
+        };
+      }
+
+      if (currentTime != undefined && frame) {
+        if (frame.findClosestTransforms(tempLower, tempUpper, currentTime, INFINITE_DURATION)) {
+          const [transformTime, transform] = tempUpper;
+          ageValue =
+            transformTime < currentTime ? formatShortDuration(currentTime - transformTime) : "0 ns";
+          const p = transform.position() as THREE.Vector3Tuple;
+          const q = transform.rotation() as THREE.Vector4Tuple;
+          xyzValue = [round(p[0], 3), round(p[1], 3), round(p[2], 3)];
+          tempQuaternion.set(q[0], q[1], q[2], q[3]);
+          tempEuler.setFromQuaternion(tempQuaternion, "XYZ");
+          rpyValue = [
+            round(THREE.MathUtils.radToDeg(tempEuler.x), 3),
+            round(THREE.MathUtils.radToDeg(tempEuler.y), 3),
+            round(THREE.MathUtils.radToDeg(tempEuler.z), 3),
+          ];
+        }
+      }
+
+      const fields: SettingsTreeFields = {
+        parent: {
+          label: "Parent",
+          input: "string",
+          value: parentFrameId,
+        },
+        age: {
+          label: "Age",
+          input: "string",
+          value: ageValue,
+        },
+        xyz: {
+          label: "Translation",
+          input: "vec3",
+          value: xyzValue,
+          precision: 3,
+          labels: ["X", "Y", "Z"],
+        },
+        rpy: {
+          label: "Rotation",
+          input: "vec3",
+          value: rpyValue,
+          labels: ["R", "P", "Y"],
+        },
+      };
+
+      return { fields };
     });
   }
 
@@ -340,4 +408,32 @@ function standardMaterial(materialCache: MaterialCache): THREE.MeshStandardMater
 
 function releaseStandardMaterial(materialCache: MaterialCache): void {
   materialCache.release(StandardColor.id(COLOR_WHITE));
+}
+
+const MS_NS = BigInt(1e6);
+const SEC_NS = BigInt(1e9);
+const MIN_NS = BigInt(6e10);
+const HOUR_NS = BigInt(3.6e12);
+
+function formatShortDuration(duration: Duration): string {
+  const absDuration = abs(duration);
+  if (absDuration < MS_NS) {
+    return `${duration} ns`;
+  } else if (absDuration < SEC_NS) {
+    return `${Number(duration / MS_NS).toFixed(1)} ms`;
+  } else if (absDuration < MIN_NS) {
+    return `${Number(duration / SEC_NS).toFixed(1)} s`;
+  } else if (absDuration < HOUR_NS) {
+    return `${Number(duration / MIN_NS).toFixed(1)} min`;
+  } else {
+    return `${Number(duration / HOUR_NS).toFixed(1)} hr`;
+  }
+}
+
+function abs(x: bigint): bigint {
+  return x < 0n ? -x : x;
+}
+
+function round(x: number, precision: number): number {
+  return Number(x.toFixed(precision));
 }

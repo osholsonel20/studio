@@ -416,6 +416,7 @@ export function ThreeDeeRender({ context }: { context: PanelExtensionContext }):
         for (const tf of tfMessage.transforms) {
           renderer.addTransformMessage(tf);
         }
+        renderer.emit("settingsTreeChange", { path: ["transforms"] });
       } else if (TRANSFORM_STAMPED_DATATYPES.has(datatype)) {
         // geometry_msgs/TransformStamped - Ingest this single transform into our TF tree
         const tf = message.message as TF;
