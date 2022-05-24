@@ -122,10 +122,6 @@ mergeSetInto(SUPPORTED_DATATYPES, CAMERA_INFO_DATATYPES);
 
 const ONE_DEGREE = Math.PI / 180;
 
-// This is the unused topic parameter passed to the SettingsNodeProvider for
-// LayerType.Transform, since transforms do not map 1:1 to topics
-const EMPTY_TOPIC = { name: "", datatype: "" };
-
 export type SettingsTreeOptions = {
   config: ThreeDeeRenderConfig;
   coordinateFrames: ReadonlyArray<SelectEntry>;
@@ -141,7 +137,7 @@ function buildTransformNode(
   settingsNodeProvider: SettingsNodeProvider,
 ): undefined | SettingsTreeNode {
   const tfConfig = typeof tfConfigOrFrameId === "string" ? {} : tfConfigOrFrameId;
-  const node = settingsNodeProvider(tfConfig, EMPTY_TOPIC);
+  const node = settingsNodeProvider(tfConfig, { name: frameId, datatype: "" });
   node.label ??= frameId;
   node.visible ??= tfConfig.visible ?? true;
   node.defaultExpansionState ??= "collapsed";
