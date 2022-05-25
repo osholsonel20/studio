@@ -36,6 +36,7 @@ import { formatTimeRaw } from "@foxglove/studio-base/util/time";
 import { ImageCanvas, ImageEmptyState, Toolbar, TopicDropdown } from "./components";
 import { useCameraInfo, ANNOTATION_DATATYPES, useImagePanelMessages } from "./hooks";
 import helpContent from "./index.help.md";
+import { downloadImage } from "./lib/downloadImage";
 import { NORMALIZABLE_IMAGE_DATATYPES } from "./lib/normalizeMessage";
 import { getRelatedMarkerTopics, getMarkerOptions } from "./lib/util";
 import { buildSettingsTree } from "./settings";
@@ -203,6 +204,23 @@ function ImageView(props: Props) {
     };
   }, [annotations, cameraInfo, transformMarkers]);
 
+  const wrapperRef = useRef<HTMLDivElement>(ReactNull);
+
+  const onDownloadImage = useCallback(async () => {
+    if (!imageMessageToRender || wrapperRef.current == undefined) {
+      return;
+    }
+
+    const topic = allImageTopics.find((top) => top.name === cameraTopic);
+    if (!topic) {
+      return;
+    }
+
+    const rect = wrapperRef.current.getBoundingClientRect();
+
+    await downloadImage(imageMessageToRender, topic, rect.width, rect.height, config);
+  }, [allImageTopics, cameraTopic, config, imageMessageToRender]);
+
   const imageTopicDropdown = useMemo(() => {
     const items = allImageTopics.map((topic) => {
       return {
@@ -233,15 +251,7 @@ function ImageView(props: Props) {
         helpContent={helpContent}
         additionalIcons={
           image && (
-            <ToolbarIconButton
-              title="Dowload image"
-              onClick={() =>
-                console.log(
-                  // TODO
-                  "make downloading things work",
-                )
-              }
-            >
+            <ToolbarIconButton title="Dowload image" onClick={onDownloadImage}>
               <DownloadIcon fontSize="small" />
             </ToolbarIconButton>
           )
@@ -262,6 +272,7 @@ function ImageView(props: Props) {
         {/* Always render the ImageCanvas because it's expensive to unmount and start up. */}
         {imageMessageToRender && (
           <ImageCanvas
+            ref={wrapperRef}
             topic={cameraTopicFullObject}
             image={imageMessageToRender}
             rawMarkerData={rawMarkerData}
