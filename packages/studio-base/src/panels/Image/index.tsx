@@ -50,8 +50,6 @@ type Props = {
 const Timestamp = muiStyled(Typography, {
   shouldForwardProp: (prop) => prop !== "screenshotTest",
 })<{ screenshotTest: boolean }>(({ screenshotTest, theme }) => ({
-  display: "flex",
-  textAlign: "right",
   position: "absolute",
   margin: theme.spacing(0.5),
   right: 0,
@@ -60,9 +58,6 @@ const Timestamp = muiStyled(Typography, {
   transition: "opacity 0.1s ease-in-out",
   opacity: 0,
   padding: theme.spacing(0.25, 0.5),
-  backgroundColor: "transparent",
-  ...theme.typography.caption,
-  fontFamily: fonts.MONOSPACE,
   userSelect: "all",
 
   ".mosaic-window:hover &": {
@@ -297,9 +292,9 @@ function ImageView(props: Props) {
         )}
         {image && (
           <Timestamp
-            size="small"
-            color="inherit"
-            variant="text"
+            fontFamily={fonts.MONOSPACE}
+            variant="caption"
+            align="right"
             screenshotTest={inScreenshotTests()}
           >
             {formatTimeRaw(image.stamp)}
