@@ -12,6 +12,7 @@ import {
   ListSubheader,
   SelectProps,
   MenuProps,
+  styled as muiStyled,
 } from "@mui/material";
 import { useMemo } from "react";
 
@@ -30,6 +31,28 @@ type Props = {
 
   onChange: (activeTopics: string[]) => void;
 };
+
+const StyledSelect = muiStyled(Select)(({ theme }) => ({
+  backgroundColor: "transparent",
+
+  "&.MuiInputBase-sizeSmall": {
+    paddingLeft: 0,
+  },
+  ".MuiSelect-select": {
+    paddingTop: `${theme.spacing(0.25)} !important`,
+    paddingBottom: `${theme.spacing(0.25)} !important`,
+  },
+  "&:hover": {
+    backgroundColor: theme.palette.action.hover,
+
+    ".MuiSelect-select": {
+      color: theme.palette.text.primary,
+    },
+  },
+  "&.Mui-focused": {
+    backgroundColor: theme.palette.action.focus,
+  },
+}));
 
 export function TopicDropdown(props: Props): JSX.Element {
   const { items, onChange, multiple, title, size = "small" } = props;
@@ -61,7 +84,7 @@ export function TopicDropdown(props: Props): JSX.Element {
 
   return (
     <>
-      <Select
+      <StyledSelect
         value={selectedTopics}
         disabled={items.length === 0}
         displayEmpty
@@ -72,6 +95,7 @@ export function TopicDropdown(props: Props): JSX.Element {
         multiple={multiple}
         open={props.open}
         MenuProps={menuProps}
+        variant="filled"
       >
         {items.length === 0 && (
           <MenuItem disabled value="">
@@ -92,7 +116,7 @@ export function TopicDropdown(props: Props): JSX.Element {
             <ListItemText primary={item.name} primaryTypographyProps={{ variant: "inherit" }} />
           </MenuItem>
         ))}
-      </Select>
+      </StyledSelect>
     </>
   );
 }
