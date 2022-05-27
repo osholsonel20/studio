@@ -47,18 +47,23 @@ type Props = {
   saveConfig: SaveImagePanelConfig;
 };
 
-const BottomBar = muiStyled("div", {
+const Timestamp = muiStyled(Typography, {
   shouldForwardProp: (prop) => prop !== "screenshotTest",
 })<{ screenshotTest: boolean }>(({ screenshotTest, theme }) => ({
   display: "flex",
   textAlign: "right",
   position: "absolute",
-  margin: theme.spacing(0.5, 1),
+  margin: theme.spacing(0.5),
   right: 0,
   bottom: 0,
   zIndex: theme.zIndex.tooltip,
   transition: "opacity 0.1s ease-in-out",
   opacity: 0,
+  padding: theme.spacing(0.25, 0.5),
+  backgroundColor: "transparent",
+  ...theme.typography.caption,
+  fontFamily: fonts.MONOSPACE,
+  userSelect: "all",
 
   ".mosaic-window:hover &": {
     opacity: "1",
@@ -291,11 +296,14 @@ function ImageView(props: Props) {
           />
         )}
         {image && (
-          <BottomBar screenshotTest={inScreenshotTests()}>
-            <Typography variant="caption" fontFamily={fonts.MONOSPACE}>
-              {formatTimeRaw(image.stamp)}
-            </Typography>
-          </BottomBar>
+          <Timestamp
+            size="small"
+            color="inherit"
+            variant="text"
+            screenshotTest={inScreenshotTests()}
+          >
+            {formatTimeRaw(image.stamp)}
+          </Timestamp>
         )}
       </Stack>
       <Toolbar pixelData={activePixelData} />
