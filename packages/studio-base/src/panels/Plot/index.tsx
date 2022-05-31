@@ -458,12 +458,17 @@ function Plot(props: Props) {
       const { path, value } = action.payload;
       saveConfig(
         produce(config, (draft) => {
-          set(draft, path.slice(1), value);
+          if (path[0] === "paths") {
+            set(draft, path, value);
+          } else {
+            set(draft, path.slice(1), value);
+          }
         }),
       );
     },
     [config, saveConfig],
   );
+
   useEffect(() => {
     updatePanelSettingsTree(panelId, {
       actionHandler,

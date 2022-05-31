@@ -4,9 +4,12 @@
 
 import { isNumber } from "lodash";
 
-import { SettingsTreeRoots } from "@foxglove/studio-base/components/SettingsTreeEditor/types";
+import {
+  SettingsTreeChildren,
+  SettingsTreeRoots,
+} from "@foxglove/studio-base/components/SettingsTreeEditor/types";
 
-import { PlotConfig } from "./types";
+import { PlotConfig, plotableRosTypes } from "./types";
 
 export function buildSettingsTree(config: PlotConfig): SettingsTreeRoots {
   const maxYError =
@@ -14,7 +17,40 @@ export function buildSettingsTree(config: PlotConfig): SettingsTreeRoots {
       ? "Y max must be greater than Y min."
       : undefined;
 
+  const paths: SettingsTreeChildren = Object.fromEntries(
+    config.paths.map((path, index) => [
+      `${index}`,
+      {
+        label: `Series ${index + 1}`,
+        visible: path.enabled,
+        fields: {
+          value: {
+            input: "messagepath",
+            label: "Path",
+            value: path.value,
+            validTypes: plotableRosTypes,
+          },
+          color: { input: "rgb", label: "Color", value: path.color },
+          timestampMethod: {
+            input: "select",
+            label: "Timestamp",
+            value: path.timestampMethod,
+            options: [
+              { label: "Receive Time", value: "receiveTime" },
+              { label: "Header Stamp", value: "headerStamp" },
+            ],
+          },
+        },
+      },
+    ]),
+  );
+
   return {
+    paths: {
+      label: "Paths",
+      icon: "ChartPaths",
+      children: paths,
+    },
     general: {
       label: "General",
       icon: "Settings",
@@ -63,6 +99,7 @@ export function buildSettingsTree(config: PlotConfig): SettingsTreeRoots {
     },
     timeSeriesOnly: {
       label: "Time series only",
+      icon: "Clock",
       fields: {
         followingViewWidth: {
           label: "X range (seconds)",

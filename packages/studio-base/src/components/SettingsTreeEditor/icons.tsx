@@ -14,6 +14,7 @@ import NoteIcon from "@mui/icons-material/Note";
 import NoteOutlinedIcon from "@mui/icons-material/NoteOutlined";
 import OpenWithIcon from "@mui/icons-material/OpenWith";
 import SettingsIcon from "@mui/icons-material/Settings";
+import SsidChartIcon from "@mui/icons-material/SsidChart";
 import TopicIcon from "@mui/icons-material/Topic";
 import UnfoldLessIcon from "@mui/icons-material/UnfoldLess";
 import UnfoldMoreIcon from "@mui/icons-material/UnfoldMore";
@@ -21,6 +22,7 @@ import ViewInArIcon from "@mui/icons-material/ViewInAr";
 
 export default {
   Background: LayersIcon,
+  ChartPaths: SsidChartIcon,
   Clock: AccessTimeIcon,
   Collapse: UnfoldLessIcon,
   Expand: UnfoldMoreIcon,
