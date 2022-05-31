@@ -13,6 +13,7 @@
 
 import { useTheme } from "@fluentui/react";
 import DownloadIcon from "@mui/icons-material/Download";
+import { Typography } from "@mui/material";
 import produce from "immer";
 import { compact, set, uniq } from "lodash";
 import memoizeWeak from "memoize-weak";
@@ -482,7 +483,7 @@ function Plot(props: Props) {
       alignItems="center"
       justifyContent="center"
       overflow="hidden"
-      style={{ position: "relative" }}
+      position="relative"
     >
       <PanelToolbar
         helpContent={helpContent}
@@ -494,7 +495,11 @@ function Plot(props: Props) {
             <DownloadIcon fontSize="small" />
           </ToolbarIconButton>
         }
-      />
+      >
+        <Typography noWrap variant="body2" color="text.secondary" flex="auto">
+          {title}
+        </Typography>
+      </PanelToolbar>
       <Stack
         direction={stackDirection}
         flex="auto"
@@ -515,7 +520,6 @@ function Plot(props: Props) {
           sidebarDimension={sidebarDimension}
         />
         <Stack flex="auto" alignItems="center" justifyContent="center" overflow="hidden">
-          {title && <div>{title}</div>}
           <PlotChart
             isSynced={xAxisVal === "timestamp" && isSynced}
             paths={yAxisPaths}
@@ -537,7 +541,7 @@ function Plot(props: Props) {
 }
 
 const defaultConfig: PlotConfig = {
-  title: undefined,
+  title: "Plot",
   paths: [{ value: "", enabled: true, timestampMethod: "receiveTime" }],
   minYValue: undefined,
   maxYValue: undefined,
