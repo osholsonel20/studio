@@ -61,11 +61,11 @@ export function TopicDropdown(props: Props): JSX.Element {
     return items.filter((item) => item.selected).map((item) => item.name);
   }, [items]);
 
-  const handleChange = (event: SelectChangeEvent<string[]>) => {
+  const handleChange = (event: SelectChangeEvent<unknown>) => {
     const {
       target: { value },
     } = event;
-    onChange(typeof value === "string" ? [value] : value);
+    onChange(Array.isArray(value) ? (value as string[]) : ([value] as string[]));
   };
 
   const menuProps: Partial<MenuProps> = {
