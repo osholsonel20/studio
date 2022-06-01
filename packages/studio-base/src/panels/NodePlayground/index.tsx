@@ -11,15 +11,23 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
-import { useTheme, Spinner, SpinnerSize } from "@fluentui/react";
 import ArrowLeftIcon from "@mdi/svg/svg/arrow-left.svg";
 import PlusIcon from "@mdi/svg/svg/plus.svg";
-import { Divider, Input, Link, Stack } from "@mui/material";
+import {
+  CircularProgress,
+  Container,
+  Divider,
+  Input,
+  Link,
+  Typography,
+  useTheme,
+  styled as muiStyled,
+} from "@mui/material";
 import { Suspense, useCallback, useEffect, useState } from "react";
-import styled from "styled-components";
 import { v4 as uuidv4 } from "uuid";
 
 import Button from "@foxglove/studio-base/components/Button";
+import EmptyState from "@foxglove/studio-base/components/EmptyState";
 import Icon from "@foxglove/studio-base/components/Icon";
 import Panel from "@foxglove/studio-base/components/Panel";
 import { usePanelContext } from "@foxglove/studio-base/components/PanelContext";
@@ -28,7 +36,7 @@ import {
   SettingsTreeAction,
   SettingsTreeRoots,
 } from "@foxglove/studio-base/components/SettingsTreeEditor/types";
-import TextContent from "@foxglove/studio-base/components/TextContent";
+import Stack from "@foxglove/studio-base/components/Stack";
 import {
   LayoutState,
   useCurrentLayoutActions,
@@ -38,7 +46,7 @@ import { useUserNodeState } from "@foxglove/studio-base/context/UserNodeStateCon
 import { useWorkspace } from "@foxglove/studio-base/context/WorkspaceContext";
 import BottomBar from "@foxglove/studio-base/panels/NodePlayground/BottomBar";
 import Sidebar from "@foxglove/studio-base/panels/NodePlayground/Sidebar";
-import Playground from "@foxglove/studio-base/panels/NodePlayground/playground-icon.svg";
+import PlaygroundIcon from "@foxglove/studio-base/panels/NodePlayground/playground-icon.svg";
 import { HelpInfoStore, useHelpInfo } from "@foxglove/studio-base/providers/HelpInfoProvider";
 import { usePanelSettingsTreeUpdate } from "@foxglove/studio-base/providers/PanelSettingsEditorContextProvider";
 import { UserNodes } from "@foxglove/studio-base/types/panels";
@@ -90,30 +98,21 @@ type Props = {
   saveConfig: (config: Partial<Config>) => void;
 };
 
-const UnsavedDot = styled.div`
-  display: ${({ isSaved }: { isSaved: boolean }) => (isSaved ? "none" : "initial")};
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  background-color: ${colors.DARK9};
-`;
-
-const SWelcomeScreen = styled.div`
-  display: flex;
-  text-align: center;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 25%;
-  height: 100%;
-  > * {
-    margin: 4px 0;
-  }
-`;
+const UnsavedDot = muiStyled("div", {
+  shouldForwardProp: (prop) => prop !== "isSaved",
+})<{
+  isSaved: boolean;
+}>(({ isSaved, theme }) => ({
+  display: isSaved ? "none" : "initial",
+  width: 6,
+  height: 6,
+  borderRadius: "50%",
+  top: "50%",
+  position: "absolute",
+  right: theme.spacing(1),
+  transform: "translateY(-50%)",
+  backgroundColor: theme.palette.text.secondary,
+}));
 
 export type Explorer = undefined | "nodes" | "utils" | "templates";
 
@@ -138,30 +137,36 @@ const WelcomeScreen = ({ addNewNode }: { addNewNode: (code?: string) => void }) 
   const setHelpInfo = useHelpInfo(selectSetHelpInfo);
   const { openHelp } = useWorkspace();
   return (
-    <SWelcomeScreen>
-      <Playground />
-      <TextContent>
-        Welcome to Node Playground! Get started by reading the{" "}
-        <Link
-          color="primary"
-          underline="hover"
-          onClick={(e) => {
-            e.preventDefault();
-            setHelpInfo({ title: "NodePlayground", content: helpContent });
-            openHelp();
-          }}
-        >
-          docs
-        </Link>
-        , or just create a new node.
-      </TextContent>
-      <Button style={{ marginTop: "8px" }} onClick={() => addNewNode()}>
-        <Icon size="medium">
-          <PlusIcon />
-        </Icon>{" "}
-        New node
-      </Button>
-    </SWelcomeScreen>
+    <EmptyState>
+      <Container maxWidth="xs">
+        <Stack justifyContent="center" alignItems="center" gap={1} fullHeight>
+          <PlaygroundIcon />
+          <Typography variant="inherit" gutterBottom>
+            Welcome to Node Playground!
+            <br />
+            Get started by reading the{" "}
+            <Link
+              color="primary"
+              underline="hover"
+              onClick={(e) => {
+                e.preventDefault();
+                setHelpInfo({ title: "NodePlayground", content: helpContent });
+                openHelp();
+              }}
+            >
+              docs
+            </Link>
+            , or just create a new node.
+          </Typography>
+          <Button onClick={() => addNewNode()}>
+            <Icon size="medium">
+              <PlusIcon />
+            </Icon>{" "}
+            New node
+          </Button>
+        </Stack>
+      </Container>
+    </EmptyState>
   );
 };
 
@@ -212,8 +217,10 @@ function NodePlayground(props: Props) {
       : "node name";
   });
 
+  const prefersDarkMode = theme.palette.mode === "dark";
+
   const inputStyle = {
-    backgroundColor: theme.semanticColors.bodyBackground,
+    backgroundColor: theme.palette.background[prefersDarkMode ? "default" : "paper"],
     width: `${Math.max(inputTitle.length + 4, 10)}ch`, // Width based on character count of title + padding
   };
 
@@ -311,10 +318,10 @@ function NodePlayground(props: Props) {
   );
 
   return (
-    <Stack height="100%">
+    <Stack fullHeight>
       <PanelToolbar helpContent={helpContent} />
       <Divider />
-      <Stack direction="row" height="100%">
+      <Stack direction="row" fullHeight>
         <Sidebar
           explorer={explorer}
           updateExplorer={updateExplorer}
@@ -342,8 +349,15 @@ function NodePlayground(props: Props) {
           setScriptOverride={setScriptOverride}
           addNewNode={addNewNode}
         />
-        <Stack flexGrow={1} height="100%" overflow="hidden">
-          <Stack direction="row" alignItems="center" bgcolor={theme.palette.neutralLighterAlt}>
+        <Stack
+          flexGrow={1}
+          fullHeight
+          overflow="hidden"
+          style={{
+            backgroundColor: theme.palette.background[prefersDarkMode ? "paper" : "default"],
+          }}
+        >
+          <Stack direction="row" alignItems="center">
             {scriptBackStack.length > 1 && (
               <Icon
                 size="large"
@@ -405,10 +419,10 @@ function NodePlayground(props: Props) {
                     flex="auto"
                     alignItems="center"
                     justifyContent="center"
-                    width="100%"
-                    height="100%"
+                    fullHeight
+                    fullWidth
                   >
-                    <Spinner size={SpinnerSize.large} />
+                    <CircularProgress size={28} />
                   </Stack>
                 }
               >

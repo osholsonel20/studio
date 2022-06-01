@@ -28,6 +28,7 @@ import {
   Paper,
   CardHeader,
   Typography,
+  Divider,
 } from "@mui/material";
 import * as monacoApi from "monaco-editor/esm/vs/editor/editor.api";
 import { ReactNode, useCallback, useMemo } from "react";
@@ -44,7 +45,7 @@ const STab = muiStyled(Tab)(({ theme }) => ({
   padding: theme.spacing(1, 1.125),
 
   "&.Mui-selected": {
-    backgroundColor: theme.palette.grey[100],
+    backgroundColor: theme.palette.grey[200],
   },
 }));
 
@@ -55,7 +56,7 @@ const STabs = muiStyled(Tabs)({
 });
 
 const ExplorerWrapper = muiStyled("div")(({ theme }) => ({
-  backgroundColor: theme.palette.grey[100],
+  backgroundColor: theme.palette.grey[200],
   width: 350,
   overflow: "auto",
 }));
@@ -284,7 +285,7 @@ const Sidebar = ({
   );
 
   return (
-    <Paper>
+    <Paper elevation={0}>
       <Stack direction="row" fullHeight>
         <STabs orientation="vertical" value={activeExplorerTab}>
           <STab
@@ -313,6 +314,7 @@ const Sidebar = ({
           />
         </STabs>
         {explorer != undefined && <ExplorerWrapper>{explorers[explorer]}</ExplorerWrapper>}
+        <Divider flexItem orientation="vertical" />
       </Stack>
     </Paper>
   );
