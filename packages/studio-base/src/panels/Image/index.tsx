@@ -221,30 +221,6 @@ function ImageView(props: Props) {
     await downloadImage(imageMessageToRender, topic, rect.width, rect.height, config);
   }, [allImageTopics, cameraTopic, config, imageMessageToRender]);
 
-  const imageTopicDropdown = useMemo(() => {
-    const items = allImageTopics.map((topic) => {
-      return {
-        name: topic.name,
-        selected: topic.name === cameraTopic,
-      };
-    });
-
-    function onChange(newTopics: string[]) {
-      const newTopic = newTopics[0];
-      if (newTopic) {
-        onChangeCameraTopic(newTopic);
-      }
-    }
-
-    const title = cameraTopic
-      ? cameraTopic
-      : items.length === 0
-      ? "No camera topics"
-      : "Select a camera topic";
-
-    return <TopicDropdown multiple={false} title={title} items={items} onChange={onChange} />;
-  }, [cameraTopic, allImageTopics, onChangeCameraTopic]);
-
   return (
     <Stack flex="auto" overflow="hidden" position="relative">
       <PanelToolbar
@@ -257,15 +233,12 @@ function ImageView(props: Props) {
           )
         }
       >
-        <Stack
-          direction="row"
-          flexWrap="wrap"
-          flex="auto"
-          alignItems="center"
-          overflow="hidden"
-          gap={0.5}
-        >
-          {imageTopicDropdown}
+        <Stack direction="row" flex="auto" alignItems="center" overflow="hidden">
+          <TopicDropdown
+            topics={allImageTopics}
+            currentTopic={cameraTopic}
+            onChange={(value) => saveConfig({ cameraTopic: value })}
+          />
         </Stack>
       </PanelToolbar>
       <Stack fullWidth fullHeight>
