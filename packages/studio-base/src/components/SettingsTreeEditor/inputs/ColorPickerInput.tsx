@@ -11,15 +11,14 @@ import { fonts } from "@foxglove/studio-base/util/sharedStyleConstants";
 
 import { ColorSwatch } from "./ColorSwatch";
 
-const StyledTextField = muiStyled(TextField)({
+const StyledTextField = muiStyled(TextField)(({ theme }) => ({
   ".MuiInputBase-formControl.MuiInputBase-root": {
     padding: 0,
   },
   ".MuiInputBase-input": {
-    fontFamily: fonts.MONOSPACE,
-    alignItems: "center",
+    paddingLeft: theme.spacing(0.25),
   },
-});
+}));
 
 const Root = muiStyled("div")({
   position: "relative",

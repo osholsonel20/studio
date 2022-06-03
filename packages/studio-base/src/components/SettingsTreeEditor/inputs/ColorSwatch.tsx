@@ -8,8 +8,8 @@ export const ColorSwatch = muiStyled("div", {
   shouldForwardProp: (prop) => prop !== "color",
 })<{ color: string }>(({ theme, color }) => ({
   backgroundColor: color,
-  height: theme.spacing(2.5),
-  width: theme.spacing(3),
+  height: 22,
+  width: 28,
   margin: theme.spacing(0.625),
   borderRadius: 1,
   border: `1px solid ${theme.palette.getContrastText(color)}`,
