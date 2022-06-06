@@ -397,12 +397,12 @@ function NodePlayground(props: Props) {
 
           <Stack flexGrow={1} overflow="hidden ">
             {selectedNodeId == undefined && <WelcomeScreen addNewNode={addNewNode} />}
-            <div
+            <Stack
+              flexGrow={1}
+              fullWidth
+              overflow="hidden"
               style={{
-                flexGrow: 1,
-                width: "100%",
-                overflow: "hidden",
-                display: selectedNodeId != undefined ? "initial" : "none",
+                display: selectedNodeId != undefined ? "flex" : "none",
                 /* Ensures the monaco-editor starts loading before the user opens it */
               }}
             >
@@ -432,7 +432,7 @@ function NodePlayground(props: Props) {
                   />
                 )}
               </Suspense>
-            </div>
+            </Stack>
             <Stack>
               <BottomBar
                 nodeId={selectedNodeId}

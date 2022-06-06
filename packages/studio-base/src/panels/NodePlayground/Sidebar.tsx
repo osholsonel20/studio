@@ -48,7 +48,7 @@ const STab = muiStyled(Tab)(({ theme }) => ({
 const STabs = muiStyled(Tabs)({
   ".MuiTabs-indicator": {
     right: "auto",
-    left: 0,
+    left: 1,
   },
 });
 
@@ -284,8 +284,9 @@ const Sidebar = ({
   return (
     <Paper elevation={0}>
       <Stack direction="row" fullHeight>
-        <STabs disableRipple orientation="vertical" value={activeExplorerTab}>
+        <STabs orientation="vertical" value={activeExplorerTab}>
           <STab
+            disableRipple
             value="nodes"
             title="Nodes"
             icon={<NoteIcon fontSize="large" />}
@@ -293,6 +294,7 @@ const Sidebar = ({
             onClick={() => updateExplorer(nodesSelected ? undefined : "nodes")}
           />
           <STab
+            disableRipple
             value="utils"
             title="Utilities"
             icon={<ConstructionOutlinedIcon fontSize="large" />}
@@ -300,6 +302,7 @@ const Sidebar = ({
             onClick={() => updateExplorer(utilsSelected ? undefined : "utils")}
           />
           <STab
+            disableRipple
             value="templates"
             title="Templates"
             icon={<TemplateIcon fontSize="large" />}
