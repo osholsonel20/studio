@@ -113,6 +113,12 @@ const UnsavedDot = muiStyled("div", {
   backgroundColor: theme.palette.text.secondary,
 }));
 
+const StyledInput = muiStyled(Input)(({ theme }) => ({
+  ".MuiInput-input": {
+    padding: theme.spacing(1),
+  },
+}));
+
 export type Explorer = undefined | "nodes" | "utils" | "templates";
 
 function buildSettingsTree(config: Config): SettingsTreeRoots {
@@ -366,7 +372,7 @@ function NodePlayground(props: Props) {
             )}
             {selectedNodeId != undefined && selectedNode && (
               <div style={{ position: "relative" }}>
-                <Input
+                <StyledInput
                   size="small"
                   disableUnderline
                   placeholder="node name"
@@ -415,6 +421,10 @@ function NodePlayground(props: Props) {
                     justifyContent="center"
                     fullHeight
                     fullWidth
+                    style={{
+                      backgroundColor:
+                        theme.palette.background[prefersDarkMode ? "default" : "paper"],
+                    }}
                   >
                     <CircularProgress size={28} />
                   </Stack>
