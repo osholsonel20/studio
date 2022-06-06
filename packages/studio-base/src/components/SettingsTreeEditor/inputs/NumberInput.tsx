@@ -73,6 +73,10 @@ export function NumberInput(
 
   const updateValue = useCallback(
     (newValue: undefined | number) => {
+      if (props.disabled === true) {
+        return;
+      }
+
       const clampedValue =
         newValue == undefined
           ? undefined
@@ -87,7 +91,7 @@ export function NumberInput(
           : clampedValue;
       onChange(newLimitedValue);
     },
-    [onChange, props.max, props.min, props.precision],
+    [onChange, props.disabled, props.max, props.min, props.precision],
   );
 
   const limitedValue =
