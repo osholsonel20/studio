@@ -43,15 +43,12 @@ import { UserNodes } from "@foxglove/studio-base/types/panels";
 const STab = muiStyled(Tab)(({ theme }) => ({
   minWidth: "auto",
   padding: theme.spacing(1, 1.125),
-
-  "&.Mui-selected": {
-    backgroundColor: theme.palette.grey[200],
-  },
 }));
 
 const STabs = muiStyled(Tabs)({
   ".MuiTabs-indicator": {
-    display: "none",
+    right: "auto",
+    left: 0,
   },
 });
 
@@ -287,9 +284,8 @@ const Sidebar = ({
   return (
     <Paper elevation={0}>
       <Stack direction="row" fullHeight>
-        <STabs orientation="vertical" value={activeExplorerTab}>
+        <STabs disableRipple orientation="vertical" value={activeExplorerTab}>
           <STab
-            disableRipple
             value="nodes"
             title="Nodes"
             icon={<NoteIcon fontSize="large" />}
@@ -297,7 +293,6 @@ const Sidebar = ({
             onClick={() => updateExplorer(nodesSelected ? undefined : "nodes")}
           />
           <STab
-            disableRipple
             value="utils"
             title="Utilities"
             icon={<ConstructionOutlinedIcon fontSize="large" />}
@@ -305,7 +300,6 @@ const Sidebar = ({
             onClick={() => updateExplorer(utilsSelected ? undefined : "utils")}
           />
           <STab
-            disableRipple
             value="templates"
             title="Templates"
             icon={<TemplateIcon fontSize="large" />}
@@ -313,7 +307,12 @@ const Sidebar = ({
             onClick={() => updateExplorer(templatesSelected ? undefined : "templates")}
           />
         </STabs>
-        {explorer != undefined && <ExplorerWrapper>{explorers[explorer]}</ExplorerWrapper>}
+        {explorer != undefined && (
+          <>
+            <Divider flexItem orientation="vertical" />
+            <ExplorerWrapper>{explorers[explorer]}</ExplorerWrapper>
+          </>
+        )}
         <Divider flexItem orientation="vertical" />
       </Stack>
     </Paper>

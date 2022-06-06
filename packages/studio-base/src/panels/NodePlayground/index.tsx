@@ -11,12 +11,14 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
-import ArrowLeftIcon from "@mdi/svg/svg/arrow-left.svg";
-import PlusIcon from "@mdi/svg/svg/plus.svg";
+import AddIcon from "@mui/icons-material/Add";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import {
+  Button,
   CircularProgress,
   Container,
   Divider,
+  IconButton,
   Input,
   Link,
   Typography,
@@ -26,9 +28,7 @@ import {
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
-import Button from "@foxglove/studio-base/components/Button";
 import EmptyState from "@foxglove/studio-base/components/EmptyState";
-import Icon from "@foxglove/studio-base/components/Icon";
 import Panel from "@foxglove/studio-base/components/Panel";
 import { usePanelContext } from "@foxglove/studio-base/components/PanelContext";
 import PanelToolbar from "@foxglove/studio-base/components/PanelToolbar";
@@ -50,7 +50,6 @@ import PlaygroundIcon from "@foxglove/studio-base/panels/NodePlayground/playgrou
 import { HelpInfoStore, useHelpInfo } from "@foxglove/studio-base/providers/HelpInfoProvider";
 import { usePanelSettingsTreeUpdate } from "@foxglove/studio-base/providers/PanelSettingsEditorContextProvider";
 import { UserNodes } from "@foxglove/studio-base/types/panels";
-import { colors } from "@foxglove/studio-base/util/sharedStyleConstants";
 
 import Config from "./Config";
 import helpContent from "./index.help.md";
@@ -158,10 +157,12 @@ const WelcomeScreen = ({ addNewNode }: { addNewNode: (code?: string) => void }) 
             </Link>
             , or just create a new node.
           </Typography>
-          <Button onClick={() => addNewNode()}>
-            <Icon size="medium">
-              <PlusIcon />
-            </Icon>{" "}
+          <Button
+            color="inherit"
+            variant="contained"
+            onClick={() => addNewNode()}
+            startIcon={<AddIcon />}
+          >
             New node
           </Button>
         </Stack>
@@ -359,15 +360,9 @@ function NodePlayground(props: Props) {
         >
           <Stack direction="row" alignItems="center">
             {scriptBackStack.length > 1 && (
-              <Icon
-                size="large"
-                tooltip="Go back"
-                dataTest="go-back"
-                style={{ color: colors.DARK9 }}
-                onClick={goBack}
-              >
-                <ArrowLeftIcon />
-              </Icon>
+              <IconButton title="Go back" data-test="go-back" size="small" onClick={goBack}>
+                <ArrowBackIcon />
+              </IconButton>
             )}
             {selectedNodeId != undefined && selectedNode && (
               <div style={{ position: "relative" }}>
@@ -390,15 +385,14 @@ function NodePlayground(props: Props) {
                 <UnsavedDot isSaved={isNodeSaved} />
               </div>
             )}
-            <Icon
-              size="large"
-              tooltip="new node"
-              dataTest="new-node"
-              style={{ color: colors.DARK9, padding: "0 5px" }}
+            <IconButton
+              title="New node"
+              data-test="new-node"
+              size="small"
               onClick={() => addNewNode()}
             >
-              <PlusIcon />
-            </Icon>
+              <AddIcon />
+            </IconButton>
           </Stack>
 
           <Stack flexGrow={1} overflow="hidden ">
