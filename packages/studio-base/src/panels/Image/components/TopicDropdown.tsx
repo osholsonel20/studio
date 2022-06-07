@@ -20,7 +20,6 @@ const StyledButton = muiStyled(Button)(({ theme }) => ({
   paddingTop: theme.spacing(0.375),
   paddingBottom: theme.spacing(0.375),
   color: theme.palette.text.secondary,
-  marginLeft: theme.spacing(-0.25),
   overflow: "hidden",
 
   "&:hover": {
