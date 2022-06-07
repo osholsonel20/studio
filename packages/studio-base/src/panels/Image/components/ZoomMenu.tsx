@@ -31,8 +31,7 @@ const StyledCard = muiStyled(Card, {
   left: 0,
   zIndex: theme.zIndex.tooltip,
   margin: theme.spacing(0.75),
-  opacity: visible ? 1 : 0,
-  transition: theme.transitions.create("opacity"),
+  visibility: visible ? "visible" : "hidden",
 
   ".hoverScreenshot &": {
     opacity: 1,
