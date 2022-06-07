@@ -31,7 +31,8 @@ const ToolbarRoot = muiStyled("div", {
   marginRight: theme.spacing(0.75),
   marginTop: `calc(${theme.spacing(0.75)} + ${PANEL_TOOLBAR_MIN_HEIGHT}px)`,
   zIndex: "drawer",
-  visibility: visible ? "visible" : "hidden",
+  opacity: visible ? 1 : 0,
+  transition: theme.transitions.create("opacity"),
 }));
 
 enum TabName {
