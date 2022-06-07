@@ -4,7 +4,7 @@
 
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import { Button, styled as muiStyled, Menu, MenuItem, ListItemText } from "@mui/material";
-import { MouseEvent, useState, useCallback, useMemo } from "react";
+import { MouseEvent, useState, useCallback } from "react";
 
 import { Topic } from "@foxglove/studio";
 import TextMiddleTruncate from "@foxglove/studio-base/panels/ThreeDimensionalViz/TopicTree/TextMiddleTruncate";

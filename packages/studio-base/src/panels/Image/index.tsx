@@ -11,7 +11,6 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
-import DownloadIcon from "@mui/icons-material/Download";
 import { Typography, styled as muiStyled } from "@mui/material";
 import produce from "immer";
 import { difference, set, union } from "lodash";
@@ -22,7 +21,6 @@ import { useMessagePipeline } from "@foxglove/studio-base/components/MessagePipe
 import Panel from "@foxglove/studio-base/components/Panel";
 import { usePanelContext } from "@foxglove/studio-base/components/PanelContext";
 import PanelToolbar from "@foxglove/studio-base/components/PanelToolbar";
-import ToolbarIconButton from "@foxglove/studio-base/components/PanelToolbar/ToolbarIconButton";
 import { SettingsTreeAction } from "@foxglove/studio-base/components/SettingsTreeEditor/types";
 import Stack from "@foxglove/studio-base/components/Stack";
 import { usePanelSettingsTreeUpdate } from "@foxglove/studio-base/providers/PanelSettingsEditorContextProvider";
@@ -36,7 +34,6 @@ import { formatTimeRaw } from "@foxglove/studio-base/util/time";
 import { ImageCanvas, ImageEmptyState, Toolbar, TopicDropdown } from "./components";
 import { useCameraInfo, ANNOTATION_DATATYPES, useImagePanelMessages } from "./hooks";
 import helpContent from "./index.help.md";
-import { downloadImage } from "./lib/downloadImage";
 import { NORMALIZABLE_IMAGE_DATATYPES } from "./lib/normalizeMessage";
 import { getRelatedMarkerTopics, getMarkerOptions } from "./lib/util";
 import { buildSettingsTree } from "./settings";
@@ -204,35 +201,9 @@ function ImageView(props: Props) {
     };
   }, [annotations, cameraInfo, transformMarkers]);
 
-  const wrapperRef = useRef<HTMLDivElement>(ReactNull);
-
-  const onDownloadImage = useCallback(async () => {
-    if (!imageMessageToRender || wrapperRef.current == undefined) {
-      return;
-    }
-
-    const topic = allImageTopics.find((top) => top.name === cameraTopic);
-    if (!topic) {
-      return;
-    }
-
-    const rect = wrapperRef.current.getBoundingClientRect();
-
-    await downloadImage(imageMessageToRender, topic, rect.width, rect.height, config);
-  }, [allImageTopics, cameraTopic, config, imageMessageToRender]);
-
   return (
     <Stack flex="auto" overflow="hidden" position="relative">
-      <PanelToolbar
-        helpContent={helpContent}
-        additionalIcons={
-          image && (
-            <ToolbarIconButton title="Dowload image" onClick={onDownloadImage}>
-              <DownloadIcon fontSize="small" />
-            </ToolbarIconButton>
-          )
-        }
-      >
+      <PanelToolbar helpContent={helpContent}>
         <Stack direction="row" flex="auto" alignItems="center" overflow="hidden">
           <TopicDropdown
             topics={allImageTopics}
@@ -245,7 +216,6 @@ function ImageView(props: Props) {
         {/* Always render the ImageCanvas because it's expensive to unmount and start up. */}
         {imageMessageToRender && (
           <ImageCanvas
-            ref={wrapperRef}
             topic={cameraTopicFullObject}
             image={imageMessageToRender}
             rawMarkerData={rawMarkerData}
