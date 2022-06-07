@@ -2310,7 +2310,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@foxglove/mcap-support@workspace:packages/mcap-support"
   dependencies:
-    "@foxglove/schemas": 0.1.2
+    "@foxglove/schemas": 0.2.0
     "@foxglove/wasm-bz2": 0.1.0
     "@protobufjs/base64": 1.1.2
     "@types/zstd-codec": "workspace:*"
@@ -2483,7 +2483,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@foxglove/schemas@npm:0.1.2, @foxglove/schemas@npm:^0.1.2":
+"@foxglove/schemas@npm:0.2.0":
+  version: 0.2.0
+  resolution: "@foxglove/schemas@npm:0.2.0"
+  dependencies:
+    "@foxglove/rosmsg-msgs-common": ^1.0.4
+    tslib: ^2
+  checksum: 2da4d8cd535dc6929550c632dab16ee3a3bd505aa5b409bf47383eb6909bb473f0caff0b244a4109c02ffff41506037fc8e0f409894d8b392ad39d5d65ba0c67
+  languageName: node
+  linkType: hard
+
+"@foxglove/schemas@npm:^0.1.2":
   version: 0.1.2
   resolution: "@foxglove/schemas@npm:0.1.2"
   dependencies:
@@ -2526,7 +2536,7 @@ __metadata:
     "@foxglove/rosmsg-serialization": 1.3.0
     "@foxglove/rosmsg2-serialization": 1.0.6
     "@foxglove/rostime": 1.1.2
-    "@foxglove/schemas": 0.1.2
+    "@foxglove/schemas": 0.2.0
     "@foxglove/studio": "workspace:*"
     "@foxglove/ulog": 2.1.2
     "@foxglove/velodyne-cloud": 1.0.1
