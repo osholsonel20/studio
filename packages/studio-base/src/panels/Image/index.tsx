@@ -15,6 +15,7 @@ import { Typography, styled as muiStyled } from "@mui/material";
 import produce from "immer";
 import { difference, set, union } from "lodash";
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { useUpdateEffect } from "react-use";
 
 import { useDataSourceInfo } from "@foxglove/studio-base/PanelAPI";
 import { useMessagePipeline } from "@foxglove/studio-base/components/MessagePipeline";
@@ -173,12 +174,21 @@ function ImageView(props: Props) {
   });
 
   const lastImageMessageRef = useRef(image);
-  if (image) {
-    lastImageMessageRef.current = image;
-  }
+
+  useEffect(() => {
+    if (image) {
+      lastImageMessageRef.current = image;
+    }
+  }, [image]);
+
   // Keep the last image message, if it exists, to render on the ImageCanvas.
   // Improve perf by hiding the ImageCanvas while seeking, instead of unmounting and remounting it.
   const imageMessageToRender = image ?? lastImageMessageRef.current;
+
+  // Clear our cached last image when the camera topic changes since it came from the old topic.
+  useUpdateEffect(() => {
+    lastImageMessageRef.current = undefined;
+  }, [cameraTopic]);
 
   const pauseFrame = useMessagePipeline(
     useCallback((messagePipeline) => messagePipeline.pauseFrame, []),

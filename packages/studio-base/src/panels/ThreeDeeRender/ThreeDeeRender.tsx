@@ -4,7 +4,7 @@
 
 import produce from "immer";
 // eslint-disable-next-line no-restricted-imports
-import { cloneDeep, merge, get, set } from "lodash";
+import { isEqual, cloneDeep, merge, get, set } from "lodash";
 import React, { useCallback, useLayoutEffect, useEffect, useState, useMemo, useRef } from "react";
 import ReactDOM from "react-dom";
 import { useResizeDetector } from "react-resize-detector";
@@ -27,38 +27,49 @@ import {
 import useCleanup from "@foxglove/studio-base/hooks/useCleanup";
 
 import { DebugGui } from "./DebugGui";
+import { NodeError } from "./LayerErrors";
 import { Renderer } from "./Renderer";
 import { RendererContext, useRendererEvent } from "./RendererContext";
 import { Stats } from "./Stats";
 import {
   normalizeCameraInfo,
+  normalizeCompressedImage,
+  normalizeImage,
   normalizeMarker,
   normalizePoseStamped,
   normalizePoseWithCovarianceStamped,
 } from "./normalizeMessages";
 import {
-  TRANSFORM_STAMPED_DATATYPES,
-  TF_DATATYPES,
-  MARKER_DATATYPES,
+  CAMERA_INFO_DATATYPES,
+  CameraInfo,
+  COMPRESSED_IMAGE_DATATYPES,
+  CompressedImage,
+  IMAGE_DATATYPES,
+  Image,
   MARKER_ARRAY_DATATYPES,
-  TF,
+  MARKER_DATATYPES,
   Marker,
   MarkerArray,
-  PointCloud2,
-  POINTCLOUD_DATATYPES,
-  OccupancyGrid,
   OCCUPANCY_GRID_DATATYPES,
+  OccupancyGrid,
+  POINTCLOUD_DATATYPES,
+  PointCloud2,
   POSE_STAMPED_DATATYPES,
   POSE_WITH_COVARIANCE_STAMPED_DATATYPES,
   PoseStamped,
   PoseWithCovarianceStamped,
-  CameraInfo,
-  CAMERA_INFO_DATATYPES,
+  TF_DATATYPES,
+  TF,
+  TRANSFORM_STAMPED_DATATYPES,
+  Header,
 } from "./ros";
 import {
   buildSettingsTree,
+  LayerSettings,
+  LayerSettingsImage,
   LayerType,
   SelectEntry,
+  SettingsTreeOptions,
   SUPPORTED_DATATYPES,
   ThreeDeeRenderConfig,
 } from "./settings";
@@ -199,7 +210,7 @@ export function ThreeDeeRender({ context }: { context: PanelExtensionContext }):
     (update) => {
       setConfig((oldConfig) => {
         const newConfig = produce(oldConfig, (draft) => {
-          const entry = get(draft, update.path);
+          const entry = get(renderer?.config ?? draft, update.path);
           set(draft, update.path, { ...entry });
         });
 
@@ -213,6 +224,8 @@ export function ThreeDeeRender({ context }: { context: PanelExtensionContext }):
   const [coordinateFrames, setCoordinateFrames] = useState<SelectEntry[]>(
     coordinateFrameList(renderer),
   );
+  // Maintain a tree of settings node errors
+  const [layerErrors, setLayerErrors] = useState<NodeError>(new NodeError([]));
   const [defaultFrame, setDefaultFrame] = useState<string | undefined>(undefined);
   const updateCoordinateFrames = useCallback(
     (curRenderer: Renderer) => {
@@ -240,10 +253,16 @@ export function ThreeDeeRender({ context }: { context: PanelExtensionContext }):
     },
     [setDefaultFrame],
   );
+  const updateLayerErrors = useCallback(
+    (_: unknown, __: unknown, ___: unknown, curRenderer: Renderer) =>
+      setLayerErrors(curRenderer.layerErrors.errors.clone()),
+    [],
+  );
   useEffect(() => {
     renderer?.addListener("transformTreeUpdated", updateCoordinateFrames);
+    renderer?.addListener("layerErrorUpdate", updateLayerErrors);
     return () => void renderer?.removeListener("transformTreeUpdated", updateCoordinateFrames);
-  }, [renderer, updateCoordinateFrames]);
+  }, [renderer, updateCoordinateFrames, updateLayerErrors]);
 
   // Set the rendering frame (aka followTf) based on the configured frame, falling back to a
   // heuristically chosen best frame for the current scene (defaultFrame)
@@ -257,20 +276,29 @@ export function ThreeDeeRender({ context }: { context: PanelExtensionContext }):
 
   const settingsNodeProviders = renderer?.settingsNodeProviders;
 
+  const throttledUpdatePanelSettingsTree = useDebouncedCallback(
+    (handler: (action: SettingsTreeAction) => void, options: SettingsTreeOptions) => {
+      // eslint-disable-next-line no-underscore-dangle
+      (
+        context as unknown as EXPERIMENTAL_PanelExtensionContextWithSettings
+      ).__updatePanelSettingsTree({
+        actionHandler: handler,
+        roots: buildSettingsTree(options),
+      });
+    },
+    250,
+    { leading: true, trailing: true, maxWait: 250 },
+  );
+
   useEffect(() => {
-    // eslint-disable-next-line no-underscore-dangle
-    (
-      context as unknown as EXPERIMENTAL_PanelExtensionContextWithSettings
-    ).__updatePanelSettingsTree({
-      actionHandler,
-      roots: buildSettingsTree({
-        config,
-        coordinateFrames,
-        followTf,
-        topics: topics ?? [],
-        topicsToLayerTypes,
-        settingsNodeProviders: settingsNodeProviders ?? new Map(),
-      }),
+    throttledUpdatePanelSettingsTree(actionHandler, {
+      config,
+      coordinateFrames,
+      layerErrors,
+      followTf,
+      topics: topics ?? [],
+      topicsToLayerTypes,
+      settingsNodeProviders: settingsNodeProviders ?? new Map(),
     });
   }, [
     actionHandler,
@@ -278,7 +306,9 @@ export function ThreeDeeRender({ context }: { context: PanelExtensionContext }):
     context,
     coordinateFrames,
     followTf,
+    layerErrors,
     settingsNodeProviders,
+    throttledUpdatePanelSettingsTree,
     topics,
     topicsToLayerTypes,
   ]);
@@ -303,6 +333,7 @@ export function ThreeDeeRender({ context }: { context: PanelExtensionContext }):
   const throttledSave = useDebouncedCallback(
     (newConfig: ThreeDeeRenderConfig) => saveState(newConfig),
     1000,
+    { leading: false, trailing: true, maxWait: 1000 },
   );
   useEffect(() => throttledSave(config), [config, throttledSave]);
 
@@ -359,24 +390,38 @@ export function ThreeDeeRender({ context }: { context: PanelExtensionContext }):
   }, [context]);
 
   // Build a list of topics to subscribe to
-  const topicsToSubscribe = useMemo(() => {
-    const subscriptionList: string[] = [];
+  const [topicsToSubscribe, setTopicsToSubscribe] = useState<string[] | undefined>(undefined);
+  useEffect(() => {
+    const subscriptions = new Set<string>();
     if (!topics) {
-      return undefined;
+      setTopicsToSubscribe(undefined);
+      return;
     }
 
     for (const topic of topics) {
       // Subscribe to all transform topics
       if (TF_DATATYPES.has(topic.datatype) || TRANSFORM_STAMPED_DATATYPES.has(topic.datatype)) {
-        subscriptionList.push(topic.name);
+        subscriptions.add(topic.name);
       } else if (SUPPORTED_DATATYPES.has(topic.datatype)) {
-        // TODO: Allow disabling of subscriptions to non-TF topics
-        subscriptionList.push(topic.name);
+        // Subscribe to known datatypes if the topic has not been toggled off
+        const topicConfig = config.topics[topic.name] as Partial<LayerSettings> | undefined;
+        if (topicConfig?.visible !== false) {
+          subscriptions.add(topic.name);
+        }
       }
     }
 
-    return subscriptionList;
-  }, [topics]);
+    // For camera imge topics, subscribe to their corresponding sensor_msgs/CameraInfo topic
+    for (const configEntry of Object.values(config.topics)) {
+      const topicConfig = configEntry as Partial<LayerSettingsImage> | undefined;
+      if (topicConfig?.visible !== false && topicConfig?.cameraInfoTopic != undefined) {
+        subscriptions.add(topicConfig.cameraInfoTopic);
+      }
+    }
+
+    const newTopics = Array.from(subscriptions.keys()).sort();
+    setTopicsToSubscribe((prevTopics) => (isEqual(prevTopics, newTopics) ? prevTopics : newTopics));
+  }, [topics, config.topics]);
 
   // Notify the extension context when our subscription list changes
   useEffect(() => {
@@ -413,6 +458,15 @@ export function ThreeDeeRender({ context }: { context: PanelExtensionContext }):
       const datatype = topicsToDatatypes.get(message.topic);
       if (!datatype) {
         continue;
+      }
+
+      // If this message has a Header, scrape the frame_id from it
+      const frameId = (message.message as Partial<{ header: Header }>).header?.frame_id;
+      if (frameId != undefined && !renderer.transformTree.hasFrame(frameId)) {
+        renderer.transformTree.getOrCreateFrame(frameId);
+        log.debug(`Added coordinate frame "${frameId}"`);
+        renderer.emit("transformTreeUpdated", renderer);
+        renderer.addCoordinateFrame(frameId);
       }
 
       if (TF_DATATYPES.has(datatype)) {
@@ -455,6 +509,14 @@ export function ThreeDeeRender({ context }: { context: PanelExtensionContext }):
       } else if (CAMERA_INFO_DATATYPES.has(datatype)) {
         const cameraInfo = normalizeCameraInfo(message.message as DeepPartial<CameraInfo>);
         renderer.addCameraInfoMessage(message.topic, cameraInfo);
+      } else if (IMAGE_DATATYPES.has(datatype)) {
+        const image = normalizeImage(message.message as DeepPartial<Image>);
+        renderer.addImageMessage(message.topic, image);
+      } else if (COMPRESSED_IMAGE_DATATYPES.has(datatype)) {
+        const compressedImage = normalizeCompressedImage(
+          message.message as DeepPartial<CompressedImage>,
+        );
+        renderer.addImageMessage(message.topic, compressedImage);
       }
     }
 
@@ -589,6 +651,8 @@ function buildTopicsToLayerTypes(topics: ReadonlyArray<Topic> | undefined): Map<
         map.set(topic.name, LayerType.Pose);
       } else if (CAMERA_INFO_DATATYPES.has(datatype)) {
         map.set(topic.name, LayerType.CameraInfo);
+      } else if (IMAGE_DATATYPES.has(datatype) || COMPRESSED_IMAGE_DATATYPES.has(datatype)) {
+        map.set(topic.name, LayerType.Image);
       }
     }
   }
@@ -601,9 +665,14 @@ function updateTopicSettings(
   layerType: LayerType,
   config: ThreeDeeRenderConfig,
 ) {
-  const topicConfig = config.topics[topic];
+  const topicConfig = config.topics[topic] as Partial<LayerSettings> | undefined;
   if (!topicConfig) {
     return;
+  }
+
+  // If visibility is toggled off for this topic, clear its topic errors
+  if (topicConfig.visible === false) {
+    renderer.layerErrors.clearTopic(topic);
   }
 
   switch (layerType) {
@@ -623,6 +692,9 @@ function updateTopicSettings(
       break;
     case LayerType.CameraInfo:
       renderer.setCameraInfoSettings(topic, topicConfig);
+      break;
+    case LayerType.Image:
+      renderer.setImageSettings(topic, topicConfig);
       break;
   }
 }
