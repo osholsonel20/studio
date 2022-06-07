@@ -138,7 +138,7 @@ export default function ZoomMenu({
                 <RemoveIcon fontSize="small" />
               </ToggleButton>
               <StyledToggleButton disabled value="zoom-value">
-                {`${zoom * 100}%`}
+                {`${Math.round(zoom * 100)}%`}
               </StyledToggleButton>
               <ToggleButton value="zoom-in" onClick={zoomIn}>
                 <AddIcon fontSize="small" />
