@@ -173,6 +173,10 @@ export class IterablePlayer implements Player {
 
   private readonly _sourceId: string;
 
+  // A player must not emit state until a previous state emit is complete. This promise stores any
+  // in-flight state emit so any new state emit waits for the in-flight emit to finish.
+  private _emittingState: Promise<void> | undefined;
+
   constructor(options: IterablePlayerOptions) {
     const { metricsCollector, urlParams, source, name, enablePreload, sourceId } = options;
 
@@ -600,62 +604,72 @@ export class IterablePlayer implements Player {
 
   /** Emit the player state to the registered listener */
   private async _emitState() {
-    if (!this._listener) {
-      return undefined;
+    while (this._emittingState) {
+      await this._emittingState;
     }
 
-    if (this._hasError) {
-      return await this._listener({
+    try {
+      if (!this._listener) {
+        return undefined;
+      }
+
+      if (this._hasError) {
+        this._emittingState = this._listener({
+          name: this._name,
+          filePath: this._filePath,
+          presence: PlayerPresence.ERROR,
+          progress: {},
+          capabilities: this._capabilities,
+          playerId: this._id,
+          activeData: undefined,
+          problems: this._problemManager.problems(),
+          urlState: {
+            sourceId: this._sourceId,
+            parameters: this._urlParams,
+          },
+        });
+        return await this._emittingState;
+      }
+
+      const messages = this._messages;
+      this._messages = [];
+
+      const currentTime = this._currentTime ?? this._start;
+
+      const data: PlayerState = {
         name: this._name,
         filePath: this._filePath,
-        presence: PlayerPresence.ERROR,
-        progress: {},
+        presence: this._presence,
+        progress: this._progress,
         capabilities: this._capabilities,
         playerId: this._id,
-        activeData: undefined,
         problems: this._problemManager.problems(),
+        activeData: {
+          messages,
+          totalBytesReceived: this._receivedBytes,
+          messageOrder: this._messageOrder,
+          currentTime,
+          startTime: this._start,
+          endTime: this._end,
+          isPlaying: this._isPlaying,
+          speed: this._speed,
+          lastSeekTime: this._lastSeekEmitTime,
+          topics: this._providerTopics,
+          topicStats: this._providerTopicStats,
+          datatypes: this._providerDatatypes,
+          publishedTopics: this._publishedTopics,
+        },
         urlState: {
           sourceId: this._sourceId,
           parameters: this._urlParams,
         },
-      });
+      };
+
+      this._emittingState = this._listener(data);
+      return await this._emittingState;
+    } finally {
+      this._emittingState = undefined;
     }
-
-    const messages = this._messages;
-    this._messages = [];
-
-    const currentTime = this._currentTime ?? this._start;
-
-    const data: PlayerState = {
-      name: this._name,
-      filePath: this._filePath,
-      presence: this._presence,
-      progress: this._progress,
-      capabilities: this._capabilities,
-      playerId: this._id,
-      problems: this._problemManager.problems(),
-      activeData: {
-        messages,
-        totalBytesReceived: this._receivedBytes,
-        messageOrder: this._messageOrder,
-        currentTime,
-        startTime: this._start,
-        endTime: this._end,
-        isPlaying: this._isPlaying,
-        speed: this._speed,
-        lastSeekTime: this._lastSeekEmitTime,
-        topics: this._providerTopics,
-        topicStats: this._providerTopicStats,
-        datatypes: this._providerDatatypes,
-        publishedTopics: this._publishedTopics,
-      },
-      urlState: {
-        sourceId: this._sourceId,
-        parameters: this._urlParams,
-      },
-    };
-
-    return await this._listener(data);
   }
 
   /**
