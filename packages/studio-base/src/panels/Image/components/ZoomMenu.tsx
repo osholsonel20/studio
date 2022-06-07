@@ -38,6 +38,9 @@ const StyledCard = muiStyled(Card, {
   },
 }));
 
+const StyledToggleButton = muiStyled(ToggleButton)({ flex: "auto", lineHeight: 1 });
+const StyledToggleButtonGroup = muiStyled(ToggleButtonGroup)({ width: "100%" });
+
 export default function ZoomMenu({
   zoom,
   setZoom,
@@ -130,27 +133,27 @@ export default function ZoomMenu({
               Scroll or use the <br />
               buttons below to zoom
             </Typography>
-            <ToggleButtonGroup fullWidth size="small">
+            <StyledToggleButtonGroup size="small" style={{ width: "100%" }}>
               <ToggleButton value="zoom-out" onClick={zoomOut}>
                 <RemoveIcon fontSize="small" />
               </ToggleButton>
-              <ToggleButton disabled value="zoom-value" style={{ flex: "auto" }}>
+              <StyledToggleButton disabled value="zoom-value">
                 {`${zoom * 100}%`}
-              </ToggleButton>
+              </StyledToggleButton>
               <ToggleButton value="zoom-in" onClick={zoomIn}>
                 <AddIcon fontSize="small" />
               </ToggleButton>
-            </ToggleButtonGroup>
+            </StyledToggleButtonGroup>
           </Stack>
         </ListItem>
         <MenuItem divider onClick={onZoom100} data-test={"hundred-zoom"}>
-          Zoom to 100%
+          <Typography variant="body2">Zoom to 100%</Typography>
         </MenuItem>
         <MenuItem divider onClick={onZoomFit} data-test={"fit-zoom"}>
-          Zoom to fit
+          <Typography variant="body2">Zoom to fit</Typography>
         </MenuItem>
         <MenuItem onClick={onZoomFill} data-test={"fill-zoom"}>
-          Zoom to fill
+          <Typography variant="body2">Zoom to fill</Typography>
         </MenuItem>
       </Menu>
     </>
