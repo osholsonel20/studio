@@ -23,6 +23,10 @@ import { useDataSourceInfo } from "@foxglove/studio-base/PanelAPI";
 import { useMessagePipeline } from "@foxglove/studio-base/components/MessagePipeline";
 import Panel from "@foxglove/studio-base/components/Panel";
 import { usePanelContext } from "@foxglove/studio-base/components/PanelContext";
+import {
+  PanelContextMenu,
+  PanelContextMenuItem,
+} from "@foxglove/studio-base/components/PanelContextMenu";
 import PanelToolbar from "@foxglove/studio-base/components/PanelToolbar";
 import { SettingsTreeAction } from "@foxglove/studio-base/components/SettingsTreeEditor/types";
 import Stack from "@foxglove/studio-base/components/Stack";
@@ -114,6 +118,12 @@ const BottomBar = ({ children }: { children?: React.ReactNode }) => {
     </div>
   );
 };
+
+const ContextMenuItems: PanelContextMenuItem[] = [
+  { type: "item", label: "Download Image", id: "download-image", icon: "Download" },
+  { type: "item", label: "Flip Horizontal", id: "flip-horizontal", icon: "Flip" },
+  { type: "item", label: "Flip Vertical", id: "flip-vertical", icon: "FlipVertical" },
+];
 
 function ImageView(props: Props) {
   const classes = useStyles();
@@ -252,6 +262,36 @@ function ImageView(props: Props) {
     lastImageMessageRef.current = undefined;
   }, [cameraTopic]);
 
+  const doDownloadImage = useCallback(async () => {
+    if (!imageMessageToRender) {
+      return;
+    }
+
+    const topic = imageTopics.find((top) => top.name === cameraTopic);
+    if (!topic) {
+      return;
+    }
+
+    await downloadImage(imageMessageToRender, topic, config);
+  }, [imageTopics, cameraTopic, config, imageMessageToRender]);
+
+  const handleContextMenuSelection = useCallback(
+    async (itemId: string) => {
+      if (itemId === "flip-horizontal") {
+        saveConfig({ flipHorizontal: !(config.flipHorizontal ?? false) });
+      }
+      if (itemId === "flip-vertical") {
+        saveConfig({ flipVertical: !(config.flipVertical ?? false) });
+      }
+      if (itemId === "download-image") {
+        await doDownloadImage();
+      }
+    },
+    [config.flipHorizontal, config.flipVertical, doDownloadImage, saveConfig],
+  );
+
+  const contextMenuItemsForClickPosition = useCallback(() => ContextMenuItems, []);
+
   const pauseFrame = useMessagePipeline(
     useCallback((messagePipeline) => messagePipeline.pauseFrame, []),
   );
@@ -284,19 +324,6 @@ function ImageView(props: Props) {
     return <BottomBar>{topicTimestamp}</BottomBar>;
   };
 
-  const onDownloadImage = useCallback(async () => {
-    if (!imageMessageToRender) {
-      return;
-    }
-
-    const topic = imageTopics.find((top) => top.name === cameraTopic);
-    if (!topic) {
-      return;
-    }
-
-    await downloadImage(imageMessageToRender, topic, config);
-  }, [imageTopics, cameraTopic, config, imageMessageToRender]);
-
   const imageTopicDropdown = useMemo(() => {
     const items = imageTopics.map((topic) => {
       return {
@@ -328,6 +355,10 @@ function ImageView(props: Props) {
       <PanelToolbar helpContent={helpContent}>
         <div className={classes.controls}>{imageTopicDropdown}</div>
       </PanelToolbar>
+      <PanelContextMenu
+        itemsForClickPosition={contextMenuItemsForClickPosition}
+        selectItem={handleContextMenuSelection}
+      />
       <Stack fullWidth fullHeight>
         {/* Always render the ImageCanvas because it's expensive to unmount and start up. */}
         {imageMessageToRender && (
@@ -337,7 +368,6 @@ function ImageView(props: Props) {
             rawMarkerData={rawMarkerData}
             config={config}
             saveConfig={saveConfig}
-            onDownloadImage={onDownloadImage}
             onStartRenderImage={onStartRenderImage}
             setActivePixelData={setActivePixelData}
           />

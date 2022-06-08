@@ -11,7 +11,7 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
-import { ContextualMenu, makeStyles } from "@fluentui/react";
+import { makeStyles } from "@fluentui/react";
 import MagnifyIcon from "@mdi/svg/svg/magnify.svg";
 import cx from "classnames";
 import { useCallback, useLayoutEffect, useRef, MouseEvent, useState, useMemo } from "react";
@@ -47,7 +47,6 @@ type Props = {
   rawMarkerData: RawMarkerData;
   config: Config;
   saveConfig: SaveImagePanelConfig;
-  onDownloadImage?: () => void;
   onStartRenderImage: () => OnFinishRenderImage;
   renderInMainThread?: boolean;
   setActivePixelData: (data: PixelData | undefined) => void;
@@ -156,7 +155,6 @@ export function ImageCanvas(props: Props): JSX.Element {
     image: normalizedImageMessage,
     config,
     saveConfig,
-    onDownloadImage,
     onStartRenderImage,
   } = props;
   const { mode } = config;
@@ -426,16 +424,6 @@ export function ImageCanvas(props: Props): JSX.Element {
     zoomOut,
   ]);
 
-  const [contextMenuEvent, setContextMenuEvent] = useState<
-    MouseEvent<HTMLCanvasElement>["nativeEvent"] | undefined
-  >(undefined);
-
-  const onCanvasContextMenu = useCallback((ev: MouseEvent<HTMLCanvasElement>) => {
-    ev.preventDefault();
-    ev.stopPropagation();
-    setContextMenuEvent(ev.nativeEvent);
-  }, []);
-
   function onCanvasClick(event: MouseEvent<HTMLCanvasElement>) {
     const boundingRect = event.currentTarget.getBoundingClientRect();
     const x = event.clientX - boundingRect.x;
@@ -473,7 +461,6 @@ export function ImageCanvas(props: Props): JSX.Element {
       {error && <div className={classes.errorMessage}>Error: {error.message}</div>}
       {renderError && <div className={classes.errorMessage}>Error: {renderError.message}</div>}
       <canvas
-        onContextMenu={onCanvasContextMenu}
         {...panZoomHandlers}
         className={cx(classes.canvas, {
           [classes.canvasImageRenderingSmooth]: config.smooth === true,
@@ -481,13 +468,6 @@ export function ImageCanvas(props: Props): JSX.Element {
         onClick={onCanvasClick}
         ref={canvasRef}
       />
-      {contextMenuEvent && (
-        <ContextualMenu
-          target={contextMenuEvent}
-          onDismiss={() => setContextMenuEvent(undefined)}
-          items={[{ key: "download", text: "Download Image", onClick: onDownloadImage }]}
-        />
-      )}
       <div ref={zoomRef} style={{ visibility: mousePresent ? "visible" : "hidden" }}>
         {openZoomContext && zoomContextMenu}
         <LegacyButton className={classes.magnify} onClick={() => setOpenZoomContext((old) => !old)}>
